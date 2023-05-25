@@ -26,20 +26,72 @@ const initializeDbAndServer = async () => {
 
 initializeDbAndServer();
 
+function hasPriorityAndStatus(requestQuery) {
+  return requestQuery.priority != undefined && requestQuery.status != undefined;
+}
+
+function hasPriority(requestQuery) {
+  return requestQuery.priority != undefined;
+}
+
+function hasStatus(requestQuery) {
+  return requestQuery.status != undefined;
+}
+
 `
 API 1
 API to GET list of all todo's whose status is 'TO DO'
 `;
 app.get("/todos/", async (request, response) => {
-  const { search_q = "TO DO" } = request.query;
-  const todosWithStatusToDoQuery = `
-    SELECT 
-        *
-    FROM
-        todo
-    WHERE
-        status LIKE "${search_q}";
-    `;
-  const todosWithStatusToDo = await db.all(todosWithStatusToDoQuery);
+  const { search_q = "", priority, status } = request.query;
+  let getTodosQuery = "";
+  switch (true) {
+    case hasPriorityAndStatus(request.query):
+      getTodosQuery = `
+        SELECT
+            *
+        FROM 
+            todo
+        WHERE
+            todo LIKE "%${search_q}%"
+            AND priority LIKE "${priority}"
+            AND status LIKE "${status}";
+        `;
+      break;
+    case hasPriority(request.query):
+      getTodosQuery = `
+        SELECT
+            *
+        FROM 
+            todo
+        WHERE
+            todo LIKE "%${search_q}%"
+            AND priority LIKE "${priority}";
+        `;
+      break;
+    case hasStatus(request.query):
+      getTodosQuery = `
+        SELECT
+            *
+        FROM 
+            todo
+        WHERE
+            todo LIKE "%${search_q}%"
+            AND status LIKE "${status}";
+        `;
+      break;
+    default:
+      getTodosQuery = `
+        SELECT
+            *
+        FROM 
+            todo
+        WHERE
+            todo LIKE "%${search_q}%";
+        `;
+      break;
+  }
+
+  const todosWithStatusToDo = await db.all(getTodosQuery);
   response.send(todosWithStatusToDo);
 });
