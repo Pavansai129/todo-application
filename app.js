@@ -95,3 +95,31 @@ app.get("/todos/", async (request, response) => {
   const todosWithStatusToDo = await db.all(getTodosQuery);
   response.send(todosWithStatusToDo);
 });
+
+`API 2: To get specific todo with todoId`;
+app.get("/todos/:todoId/", async (request, response) => {
+  const { todoId } = request.params;
+  const getSpecificTodosQuery = `
+        SELECT
+            * 
+        FROM 
+            todo
+        WHERE 
+            id = ${todoId};
+    `;
+  const todosWithStatusToDo = await db.get(getSpecificTodosQuery);
+  response.send(todosWithStatusToDo);
+});
+
+//API 3: to post the data to the database
+app.post("/todos/", async (request, response) => {
+  const { id, todo, priority, status } = request.body;
+  const postTodosQuery = `
+  INSERT INTO
+      todo (id, todo, priority, status)
+  VALUES
+      (${id}, "${todo}", "${priority}", "${status}");
+  `;
+  await db.run(postTodosQuery);
+  response.send("Todo Successfully Added");
+});
