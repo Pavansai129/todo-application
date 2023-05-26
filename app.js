@@ -4,6 +4,7 @@ const sqlite3 = require("sqlite3");
 const path = require("path");
 
 const app = express();
+app.use(express.json());
 
 const dbPath = path.join(__dirname, "todoApplication.db");
 
@@ -38,13 +39,20 @@ function hasStatus(requestQuery) {
   return requestQuery.status != undefined;
 }
 
+function hasTodo(requestQuery) {
+  return requestQuery.todo != undefined;
+}
+
+let getTodosQuery = "";
+
+let updateDatabaseQuery = "";
+
 `
 API 1
 API to GET list of all todo's whose status is 'TO DO'
 `;
 app.get("/todos/", async (request, response) => {
   const { search_q = "", priority, status } = request.query;
-  let getTodosQuery = "";
   switch (true) {
     case hasPriorityAndStatus(request.query):
       getTodosQuery = `
@@ -123,3 +131,62 @@ app.post("/todos/", async (request, response) => {
   await db.run(postTodosQuery);
   response.send("Todo Successfully Added");
 });
+
+// API 4 update the data in the database
+app.put("/todos/:todoId/", async (request, response) => {
+  const { todoId } = request.params;
+  const { todo, priority, status } = request.body;
+  switch (true) {
+    case hasPriority(request.body):
+      updateDatabaseQuery = `
+        UPDATE
+          todo
+        SET 
+          priority = "${priority}"
+        WHERE
+          id = ${todoId};
+        `;
+      await db.run(updateDatabaseQuery);
+      response.send("Priority Updated");
+      break;
+    case hasStatus(request.body):
+      updateDatabaseQuery = `
+        UPDATE
+          todo
+        SET 
+          status = "${status}"
+        WHERE
+          id = ${todoId};
+        `;
+      await db.run(updateDatabaseQuery);
+      response.send("Status Updated");
+      break;
+    case hasTodo(request.body):
+      updateDatabaseQuery = `
+        UPDATE
+          todo
+        SET 
+          todo = "${todo}"
+        WHERE
+          id = ${todoId};
+        `;
+      await db.run(updateDatabaseQuery);
+      response.send("Todo Updated");
+      break;
+  }
+});
+
+//API 5 to delete data in database with specific Id
+app.delete("/todos/:todoId/", async (request, response) => {
+  const { todoId } = request.params;
+  const deleteDataQuery = `
+    DELETE FROM 
+      todo
+    WHERE 
+      id = ${todoId};
+    `;
+  await db.run(deleteDataQuery);
+  response.send("Todo Deleted");
+});
+
+module.exports = app;
